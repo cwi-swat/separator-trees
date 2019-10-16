@@ -1,0 +1,20 @@
+rule br(con(Y)) => "<Y>"
+
+rule add(X, X) => "2 *           <X>"
+
+
+
+rule add(X, con(0)) => "<X>"
+
+rule add(con(0), X) => "<X>"
+
+rule mul(con(0), _) => "0"
+
+
+rule br(br(E)) => "(<E>)"
+
+rule call(N, [Pre*, con(1), Post*]) => "<N>(<Pre*>, 0, 2, <Post*>)"
+
+rule br(call(N, [Args*])) => "<N>(<Args*>)"
+
+rule mul(_, con(0)) => "0"
