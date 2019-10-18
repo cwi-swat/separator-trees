@@ -28,7 +28,7 @@ str yieldL(xs, list[str] seps)
  * Rules, patterns and interpolated strings
  */
  
-data Rule = rule(Pattern lhs, String rhs);
+data Rule = rule(Pattern lhs, Txt rhs);
 
 data Pattern
   = cons(str name, list[Pattern] args)
@@ -38,7 +38,7 @@ data Pattern
   | lvar(str name)
   ;
  
-alias String = list[Elt];
+alias Txt = list[Elt];
 
 data Elt
   = lit(str src)
@@ -53,25 +53,28 @@ data Elt
 
 alias Env = map[str, Term];
 
-str subst(string, env) = subst(string, "", env);
+str subst(txt, env) = subst(txt, "", env);
 
-str subst([], prefix, _) = prefix ;
+str subst([], pre, _) = pre;
 
-str subst([lit(x), *tail], prefix, env) = subst(tail, prefix + x, env);
+str subst([lit(x), *tail], pre, env) 
+  = subst(tail, pre + x, env);
   
-str subst([var(x), *tail], prefix, env) = subst(tail, prefix + yield(env[x]), env);
+str subst([var(x), *tail], pre, env) 
+  = subst(tail, pre + yield(env[x]), env);
   
-str subst([lvar(x), *tail], prefix, env) {
-  Term l = env[x];
-  prefix = prefix + yield(l); 
-  suffix = subst(tail, "", env);
-  if (l.elts == []) {
-    if (endsWith(sep, prefix)) 
-      prefix = prefix[0..size(prefix) - size(sep)];
-    else if (startsWith(sep, suffix)) 
-      suffix = suffix[size(sep)..];
+str subst([lvar(x), *tail], pre, env) {
+  lst = env[x];
+  pre += yield(l); 
+  post = subst(tail, "", env);
+  if (lst.elts == []) {
+    sepLen = size(lst.sep);
+    if (endsWith(lst.sep, pre)) 
+      pre = pre[..-sepLen];
+    else if (startsWith(lst.sep, post)) 
+      post = post[sepLen..];
   }
-  return prefix + suffix;
+  return pre + post;
 }
 
 
@@ -82,9 +85,8 @@ str subst([lvar(x), *tail], prefix, env) {
  */
 
 tuple[bool, Env] match(Term t, Pattern p) {
-  try {
+  try 
     return <true, match(t, p, ())>; 
-  }
   catch Fail():
     return <false, ()>;
 }
