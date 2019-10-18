@@ -42,16 +42,23 @@ alias Txt = list[Elt];
 
 data Elt
   = lit(str src)
+  | marked(str src)
   | var(str name)
   | lvar(str name)
-  | mark()
   ;
 
 str par() = "§";
 
 /*
 
-  f(<Args*>) => f(<Args*>, §Logger log)
+«  »
+
+
+  f(<Args*>) => f(<Args*>§, §Logger log)
+  
+  {<Stmts*>} => {
+                '  <Stmts*>§;
+                '  §println()
 
 */
 
@@ -63,8 +70,10 @@ str par() = "§";
 alias Env = map[str, Term];
 
 str subst(txt, env) 
-  = ( "" | it + x | lit(str x) <- subst(txt, [], env) );
+  = ( "" | it + e.src | e <- subst(txt, [], env) );
 
+
+// post: result only has lit and marked
 Txt subst([], hist, _) = hist;
 
 Txt subst([lit(x), *tail], hist, env) 
@@ -73,19 +82,19 @@ Txt subst([lit(x), *tail], hist, env)
 Txt subst([var(x), *tail], hist, env) 
   = subst(tail, hist + [lit(yield(env[x]))], env);
 
-Txt subst([mark(), *tail], hist, env)
-  = subst(tail, hist + [mark()], env); 
+Txt subst([marked(x), *tail], hist, env)
+  = subst(tail, hist + [marked(x)], env); 
   
 Txt subst([lvar(x), *tail], hist, env) {
   lst = env[x];
   
-  if (lst.elts == []) {
-    if (int idx := lastIndexOf(hist, mark()), idx > -1) {
-      hist = hist[..idx];
-    }
-    else if (int idx := indexOf(tail, mark()), idx > -1) {
-      tail = tail[idx+1..];     
-    }
+  // we assume listvars are directly preceded
+  // or followed by a marked separator, if any.
+  if (lst.elts == []) { 
+    if (hist[-1] is marked) 
+      hist = hist[..-1];
+    else if (tail[0] is marked)
+      tail = tail[1..];
   }
   
   return subst(tail, hist + [lit(yield(lst))], env);
