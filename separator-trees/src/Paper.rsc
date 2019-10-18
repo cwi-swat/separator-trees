@@ -68,7 +68,7 @@ str subst([lvar(x), *tail], prefix, env) {
   if (l.elts == []) {
     if (endsWith(sep, prefix)) 
       prefix = prefix[0..size(prefix) - size(sep)];
-    if (startsWith(sep, suffix)) 
+    else if (startsWith(sep, suffix)) 
       suffix = suffix[size(sep)..];
   }
   return prefix + suffix;
@@ -83,8 +83,7 @@ str subst([lvar(x), *tail], prefix, env) {
 
 tuple[bool, Env] match(Term t, Pattern p) {
   try {
-    env = match(t, p, ());
-    return <true, env>; 
+    return <true, match(t, p, ())>; 
   }
   catch Fail():
     return <false, ()>;
@@ -118,7 +117,7 @@ Env matchL([], _, _, [!lvar(_), *ps], _)
   = { throw Fail(); };
 
 Env matchL(ts, seps, sep, [lvar(x), *ps], env) {
-  for (i <- [0..size(ts)+1]) {
+  for (i <- [0..size(ts)+1]) 
     try {
       sub = lst(ts[0..i], seps[0..i], sep);
       if (x in env, !equalModSep(env[x], sub)) 
@@ -126,7 +125,6 @@ Env matchL(ts, seps, sep, [lvar(x), *ps], env) {
       return matchL(ts[i..], seps[i..], sep, ps, env + (x: sub));
     }
     catch Fail(): ;
-  }
   throw Fail();
 }
 
@@ -140,6 +138,5 @@ default Env matchL([t, *ts], seps, sep, [p, *ps], env)
  
 Term parse(str src); 
  
-Term apply(rule(lhs, rhs), Term t)
-  = parse(subst(rhs, env))
+Term apply(rule(lhs, rhs), Term t) = parse(subst(rhs, env))
   when <true, env> := match(t, lhs); 
