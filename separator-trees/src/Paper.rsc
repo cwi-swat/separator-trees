@@ -53,19 +53,28 @@ data Elt
 
 alias Env = map[str, Term];
 
-str subst([], _) = "";
+str subst(string, env) = subst(string, "", env);
 
-str subst([lit(x), *tail], env) = x + subst(tail, env);
+str subst([], prefix, _) = prefix ;
+
+str subst([lit(x), *tail], prefix, env) = subst(tail, prefix + x, env);
   
-str subst([var(x), *tail], env) = yield(env[x]) + subst(tail);
+str subst([var(x), *tail], prefix, env) = subst(tail, prefix + yield(env[x]), env);
   
-str subst([lvar(x), *tail], env) {
-  str rest = subst(tail, env);
+str subst([lvar(x), *tail], prefix, env) {
+  prefix = prefix + yield(l); 
+  suffix = subst(tail, "", env);
   Term l = env[x];
-  if (l.elts == []) 
-    rest = trim(rest, l.sep);
-  return yield(l) + rest;
+  if (l.elts == []) {
+    if (endsWith(sep, prefix)) 
+      prefix = prefix[0..size(prefix) - size(sep)];
+    if (startsWith(sep, suffix)) 
+      suffix = suffix[size(sep)..];
+  }
+  return prefix + suffix;
 }
+
+
 
 
 /*
