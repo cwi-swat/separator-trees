@@ -62,9 +62,9 @@ str subst([lit(x), *tail], prefix, env) = subst(tail, prefix + x, env);
 str subst([var(x), *tail], prefix, env) = subst(tail, prefix + yield(env[x]), env);
   
 str subst([lvar(x), *tail], prefix, env) {
+  Term l = env[x];
   prefix = prefix + yield(l); 
   suffix = subst(tail, "", env);
-  Term l = env[x];
   if (l.elts == []) {
     if (endsWith(sep, prefix)) 
       prefix = prefix[0..size(prefix) - size(sep)];
