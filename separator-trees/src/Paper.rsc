@@ -1,5 +1,6 @@
 module Paper
 
+import List;
 
 /* 
  * Separator trees
@@ -56,9 +57,10 @@ str par() = "§";
 
   f(<Args*>) => f(<Args*>§, §Logger log)
   
-  {<Stmts*>} => {
+  {<Stmts*>} => "{
                 '  <Stmts*>§;
                 '  §println()
+                '}";
 
 */
 
@@ -73,17 +75,17 @@ str subst(txt, env)
   = ( "" | it + e.src | e <- subst(txt, [], env) );
 
 
-// post: result only has lit and marked
+// post: result only has lit or marked
 Txt subst([], hist, _) = hist;
 
 Txt subst([lit(x), *tail], hist, env) 
-  = subst(tail, hist + [lit(x)], env);
+  = subst(tail, [*hist, lit(x)], env);
   
 Txt subst([var(x), *tail], hist, env) 
-  = subst(tail, hist + [lit(yield(env[x]))], env);
+  = subst(tail, [*hist, lit(yield(env[x]))], env);
 
 Txt subst([marked(x), *tail], hist, env)
-  = subst(tail, hist + [marked(x)], env); 
+  = subst(tail, [*hist, marked(x)], env); 
   
 Txt subst([lvar(x), *tail], hist, env) {
   lst = env[x];
@@ -91,13 +93,13 @@ Txt subst([lvar(x), *tail], hist, env) {
   // we assume listvars are directly preceded
   // or followed by a marked separator, if any.
   if (lst.elts == []) { 
-    if (hist[-1] is marked) 
+    if (hist != [], hist[-1] is marked) 
       hist = hist[..-1];
-    else if (tail[0] is marked)
+    else if (tail != [], tail[0] is marked)
       tail = tail[1..];
   }
   
-  return subst(tail, hist + [lit(yield(lst))], env);
+  return subst(tail, [*hist,lit(yield(lst))], env);
 }
 
 
@@ -136,9 +138,9 @@ default Env match(_, _, _) = { throw Fail(); };
  * List matching  
  */
 
-Env matchL([], _, _, [], env) = env;
+Env matchL([], _, [], env) = env;
 
-Env matchL([], _, _, [!lvar(_), *_], _) 
+Env matchL([], _, [!lvar(_), *_], _) 
   = { throw Fail(); };
 
 Env matchL(ts, seps, [lvar(x), *ps], env) {
@@ -161,7 +163,7 @@ default Env matchL([t, *ts], seps, [p, *ps], env)
  * Rule application
  */
  
-Term parse(str src); 
+//Term parse(str src); 
  
 Term apply(rule(lhs, rhs), Term t) = parse(subst(rhs, env))
   when <true, env> := match(t, lhs); 
