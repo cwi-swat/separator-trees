@@ -7,7 +7,7 @@ module Paper
 
 data Term
   = cons(str name, list[Term] args, list[str] seps)
-  | lst(list[Term] elts, list[str] seps, str sep)
+  | lst(list[Term] elts, list[str] seps)
   | lit(str src)
   ;
 
@@ -15,7 +15,7 @@ data Term
 str yield(cons(_, args, seps)) 
   = yieldL(args, seps);
 
-str yield(lst(xs, seps, _))
+str yield(lst(xs, seps))
   = yieldL(xs, ["", *seps, ""]);
   
 str yield(lit(x)) = x;
@@ -43,8 +43,17 @@ alias Txt = list[Elt];
 data Elt
   = lit(str src)
   | var(str name)
-  | lvar(str name);
+  | lvar(str name)
+  | mark()
+  ;
 
+str par() = "§";
+
+/*
+
+  f(<Args*>) => f(<Args*>, §Logger log)
+
+*/
 
 
 /*
@@ -53,28 +62,33 @@ data Elt
 
 alias Env = map[str, Term];
 
-str subst(txt, env) = subst(txt, "", env);
+str subst(txt, env) 
+  = ( "" | it + x | lit(str x) <- subst(txt, [], env) );
 
-str subst([], pre, _) = pre;
+Txt subst([], hist, _) = hist;
 
-str subst([lit(x), *tail], pre, env) 
-  = subst(tail, pre + x, env);
+Txt subst([lit(x), *tail], hist, env) 
+  = subst(tail, hist + [lit(x)], env);
   
-str subst([var(x), *tail], pre, env) 
-  = subst(tail, pre + yield(env[x]), env);
+Txt subst([var(x), *tail], hist, env) 
+  = subst(tail, hist + [lit(yield(env[x]))], env);
+
+Txt subst([mark(), *tail], hist, env)
+  = subst(tail, hist + [mark()], env); 
   
-str subst([lvar(x), *tail], pre, env) {
+Txt subst([lvar(x), *tail], hist, env) {
   lst = env[x];
-  pre += yield(lst); 
-  post = subst(tail, "", env);
+  
   if (lst.elts == []) {
-    sepLen = size(lst.sep);
-    if (endsWith(lst.sep, pre)) 
-      pre = pre[..-sepLen];
-    else if (startsWith(lst.sep, post)) 
-      post = post[sepLen..];
+    if (int idx := lastIndexOf(hist, mark()), idx > -1) {
+      hist = hist[..idx];
+    }
+    else if (int idx := indexOf(tail, mark()), idx > -1) {
+      tail = tail[idx+1..];     
+    }
   }
-  return pre + post;
+  
+  return subst(tail, hist + [lit(yield(lst))], env);
 }
 
 
@@ -103,8 +117,8 @@ Env match(cons(x, as, _), cons(x, bs), env)
   = ( env | it + match(as[i], bs[i], it) | i <- [0..size(as)] )
   when size(as) == size(bs);
   
-Env match(lst(xs, seps, sep), lst(ys), env)
-  = matchL(xs, seps, sep, ys, env);
+Env match(lst(xs, seps), lst(ys), env)
+  = matchL(xs, seps, ys, env);
   
 default Env match(_, _, _) = { throw Fail(); };
   
@@ -115,23 +129,23 @@ default Env match(_, _, _) = { throw Fail(); };
 
 Env matchL([], _, _, [], env) = env;
 
-Env matchL([], _, _, [!lvar(_), *ps], _) 
+Env matchL([], _, _, [!lvar(_), *_], _) 
   = { throw Fail(); };
 
-Env matchL(ts, seps, sep, [lvar(x), *ps], env) {
+Env matchL(ts, seps, [lvar(x), *ps], env) {
   for (i <- [0..size(ts)+1]) 
     try {
-      sub = lst(ts[0..i], seps[0..i], sep);
+      sub = lst(ts[0..i], seps[0..i]);
       if (x in env, !equalModSep(env[x], sub)) 
         continue;
-      return matchL(ts[i..], seps[i..], sep, ps, env + (x: sub));
+      return matchL(ts[i..], seps[i..], ps, env + (x: sub));
     }
     catch Fail(): ;
   throw Fail();
 }
 
-default Env matchL([t, *ts], seps, sep, [p, *ps], env) 
-  = matchL(ts, seps[1..], sep, ps, match(t, p, env));
+default Env matchL([t, *ts], seps, [p, *ps], env) 
+  = matchL(ts, seps[1..], ps, match(t, p, env));
   
 
 /*
