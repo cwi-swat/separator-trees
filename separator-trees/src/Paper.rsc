@@ -65,7 +65,7 @@ str subst([var(x), *tail], pre, env)
   
 str subst([lvar(x), *tail], pre, env) {
   lst = env[x];
-  pre += yield(l); 
+  pre += yield(lst); 
   post = subst(tail, "", env);
   if (lst.elts == []) {
     sepLen = size(lst.sep);
