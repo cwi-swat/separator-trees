@@ -37,6 +37,7 @@ void foo(Value v) {
 
 data Elt
   = txt(str lit)
+  | marked(str lit)
   | var(str name)
   | lvar(str name)
   ;
@@ -64,6 +65,8 @@ Str implode(Rhs rhs)
   = string({for (part <- rhs.parts) {
     if (part is txt) {
       append txt("<part.txt>");
+    } else if (part is marked) {
+      append marked("<part.txt>");
     } else if (part is var) {
       append var("<part.v.name>");
     } else if (part is lvar) {

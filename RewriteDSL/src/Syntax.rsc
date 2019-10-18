@@ -24,10 +24,14 @@ lexical StrLit
 lexical Txt
   = [A-Za-z0-9()\[\],\ \\+-*/] !<< [A-Za-z0-9()\[\],\ \\+-*/]+ txt !>> [A-Za-z0-9()\[\],\ \\+-*/];
 
+lexical TxtOpt
+  = [A-Za-z0-9()\[\],\ \\+-*/] !<< [A-Za-z0-9()\[\],\ \\+-*/]* txt !>> [A-Za-z0-9()\[\],\ \\+-*/];
+
 lexical Rhs = "\"" Part* parts "\"";
 
 lexical Part
   = txt: Txt txt
+  | marked: "$" TxtOpt txt "$"
   | var: SVar v
   | lvar: LVar v
   ;
