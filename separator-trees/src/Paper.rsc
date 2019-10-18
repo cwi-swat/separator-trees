@@ -123,15 +123,15 @@ Env matchL(ts, seps, sep, [lvar(x), *ps], env) {
       sub = lst(ts[0..i], seps[0..i], sep);
       if (x in env, !equalModSep(env[x], sub)) 
         continue;
-      return matchL(ts[i..], seps[i..], ps, env + (x: sub));
+      return matchL(ts[i..], seps[i..], sep, ps, env + (x: sub));
     }
     catch Fail(): ;
   }
   throw Fail();
 }
 
-default Env matchL([t, *ts], seps, [p, *ps], env) 
-  = matchL(ts, seps[1..], ps, match(t, p, env));
+default Env matchL([t, *ts], seps, sep, [p, *ps], env) 
+  = matchL(ts, seps[1..], sep, ps, match(t, p, env));
   
 
 /*
