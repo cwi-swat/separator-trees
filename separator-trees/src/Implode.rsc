@@ -24,7 +24,7 @@ str yieldArgs(list[value] xs, list[str] seps)
   = ( seps[0] | it + yield(xs[i]) + seps[i+1] | int i <- [0..size(xs)] );
 
 
-value implodeSep(appl(regular(Symbol sym), list[Tree] args)) {
+value implodeSep(aa:appl(regular(Symbol sym), list[Tree] args)) {
   // return <list[elts], list[str] seps
 
   tuple[list[value], list[str]] makeList(list[Symbol] seps, list[Tree] args) {
@@ -46,39 +46,38 @@ value implodeSep(appl(regular(Symbol sym), list[Tree] args)) {
     return <elts, strSeps>;
   }
   
-  //value makeSeqNode(list[Symbol] symbols, list[Tree] args) {
-  //  elts = [];
-  //  strSeps = [];
-  //  int i = 0;
-  //  
-  //  curSep = "";
-  //  println(size(args));
-  //  for (int i <- [0..size(args)]) {
-  //    if (isSep(symbols[i])) {
-  //      curSep += "<args[i]>";
-  //    } else {
-  //      strSeps += [curSep];
-  //      curSep = "";
-  //      elts += [implodeSep(args[i])];
-  //    }
-  //  }
-  //  strSeps += [curSep];
-  //  return makeNode(getName(s), kids, keywordParameters=("seps": seps));
-  //}
+  value makeSeqNode(list[Symbol] symbols, list[Tree] args) {
+    elts = [];
+    strSeps = [];
+    int i = 0;
+    
+    curSep = "";
+    for (int i <- [0..size(args)]) {
+      if (isSep(symbols[i])) {
+        curSep += "<args[i]>";
+      } else {
+        strSeps += [curSep];
+        curSep = "";
+        elts += [implodeSep(args[i])];
+      }
+    }
+    strSeps += [curSep];
+    return makeNode(printSymbol(aa.prod.def, false), elts, keywordParameters=("seps": strSeps));
+  }
   
   switch (sym) {
     case empty(): 
       return <[], []>;
     
-    //case opt(Symbol s): {
-    //  if (args == []) {
-    //    return <[], []>;
-    //  }
-    //  assert size(args) == 1;
-    //  return implodeSep(args[0]);
-    //  //return <[ implodeSep(a) | a <- args ], []> ;
-    //}
-    //
+    case opt(Symbol s): {
+      if (args == []) {
+        return <[], []>;
+      }
+      assert size(args) == 1;
+      return implodeSep(args[0]);
+      //return <[ implodeSep(a) | a <- args ], []> ;
+    }
+    
     case iter(Symbol s): 
       return <[ implodeSep(a) | a <- args ], []> ;
     
@@ -91,8 +90,8 @@ value implodeSep(appl(regular(Symbol sym), list[Tree] args)) {
     case \iter-star-seps(Symbol s, list[Symbol] seps): 
       return makeList(seps, args);
     
-    //case \seq(list[Symbol] symbols): 
-    //  return makeSeqNode(symbols, args);
+    case \seq(list[Symbol] symbols): 
+      return makeSeqNode(symbols, args);
       
     default: throw "Unsupported regular: <sym>";
   }
@@ -105,27 +104,6 @@ str getName(lex(str x)) = x;
 bool isLex(label(_, Symbol s)) = isLex(s);
 default bool isLex(Symbol s) = s is lex || s is lit;
 
-value implodeSep(appl(prod(\start(Symbol s)), list[Tree] args)) {
-  return getName(s)(implodeSep(args[1]), seps=["<args[0]>", "<args[2]>"]);
-}
-
-tuple[list[Symbol], list[Tree]] preprocess([], []) = <[],[]>;
-tuple[list[Symbol], list[Tree]] preprocess([Symbol head, *Symbol tail], [Tree a0, *Tree as]) {
-  switch(head) {
-    case opt(Symbol s): {
-      if (a0.args == []) {
-        return preprocess(tail, as);
-      }
-      return preprocess([s, *tail], [a0[0], *as]);
-    }
-    case seq(list[Symbol] syms): return preprocess([*syms, *tail], [*a0.args, *as]);
-    default: {
-      <sTail, aTail> = preprocess(tail, as);
-      return <[head] + sTail, [a0] + aTail>;
-    }
-  }
-}
-
 value implodeSep(t:appl(prod(Symbol s, list[Symbol] syms, _), list[Tree] args)) {
   if (isLex(s)) {
     return "<t>";
@@ -135,16 +113,15 @@ value implodeSep(t:appl(prod(Symbol s, list[Symbol] syms, _), list[Tree] args)) 
   list[value] kids = [];
   list[str] seps = [];
   
-  <ss, as> = preprocess(syms, args);
   curSep = "";
-  for (int i <- [0..size(ss)]) {
-    if (isSep(ss[i])) {
-      curSep += "<as[i]>";
+  for (int i <- [0..size(syms)]) {
+    if (isSep(syms[i])) {
+      curSep += "<args[i]>";
     }
     else {
       seps += [curSep];
       curSep = "";
-      kids += [implodeSep(as[i])];
+      kids += [implodeSep(args[i])];
     }
   }
   seps += [curSep];
