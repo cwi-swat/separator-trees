@@ -46,12 +46,38 @@ value implodeSep(appl(regular(Symbol sym), list[Tree] args)) {
     return <elts, strSeps>;
   }
   
+  value makeSeqNode(list[Symbol] symbols, list[Tree] args) {
+    elts = [];
+    strSeps = [];
+    int i = 0;
+    
+    curSep = "";
+    println(size(args));
+    for (int i <- [0..size(args)]) {
+      if (isSep(symbols[i])) {
+        curSep += "<args[i]>";
+      } else {
+        strSeps += [curSep];
+        curSep = "";
+        elts += [implodeSep(args[i])];
+      }
+    }
+    strSeps += [curSep];
+    return makeNode(getName(s), kids, keywordParameters=("seps": seps));
+  }
+  
   switch (sym) {
     case empty(): 
       return <[], []>;
     
-    case opt(Symbol s): 
-      return <[ implodeSep(a) | a <- args ], []> ;
+    case opt(Symbol s): {
+      if (args == []) {
+        return <[], []>;
+      }
+      assert size(args) == 1;
+      return implodeSep(args[0]);
+      //return <[ implodeSep(a) | a <- args ], []> ;
+    }
     
     case iter(Symbol s): 
       return <[ implodeSep(a) | a <- args ], []> ;
@@ -64,6 +90,9 @@ value implodeSep(appl(regular(Symbol sym), list[Tree] args)) {
     
     case \iter-star-seps(Symbol s, list[Symbol] seps): 
       return makeList(seps, args);
+    
+    case \seq(list[Symbol] symbols): 
+      return makeSeqNode(symbols, args);
       
     default: throw "Unsupported regular: <sym>";
   }
