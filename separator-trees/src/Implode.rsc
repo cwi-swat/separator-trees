@@ -74,7 +74,7 @@ str getName(sort(str x)) = x;
 str getName(lex(str x)) = x;
 
 bool isLex(label(_, Symbol s)) = isLex(s);
-default bool isLex(Symbol s) = s is lex;
+default bool isLex(Symbol s) = s is lex || s is lit;
 
 value implodeSep(appl(prod(\start(Symbol s)), list[Tree] args)) {
   return getName(s)(implodeSep(args[1]), seps=["<args[0]>", "<args[2]>"]);
